@@ -14,6 +14,7 @@ namespace vampi
         }
         public static int legalSexAge = Settings.humanLegalSexAge;
         public static int vampireConversionRate = Settings.humanVampireConversionPercent;
+        public bool ismale;
 
         public Einwohner(Spielfeld sfeld)
             : base(sfeld) {
@@ -21,6 +22,7 @@ namespace vampi
             this.maxAge = Settings.humanMaxAge;
             this.age = Program.random.Next(0, Settings.humanMaxInitAge);
             Einwohner.count++;
+            if (Program.random.Next(0, 100) < 85) this.ismale = true; else this.ismale = false;
         }
 
         public void infect() {
@@ -55,7 +57,8 @@ namespace vampi
                 if (neighbor != null && neighbor.Sfigur != null) {
                     if (neighbor.Sfigur.Typ == Typliste.EINWOHNER) {
                         if (neighbor.Sfigur.Age >= Einwohner.legalSexAge && (Settings.humanNormalCanReproduceWithInfected || !((Einwohner)neighbor.Sfigur).Infected)) {
-                            mateFound = true;
+                            if (((Einwohner)neighbor.Sfigur).ismale != this.ismale)
+                                mateFound = true;
                         }
                     }
                 } else if (neighbor != null && neighbor.Sfigur == null) {

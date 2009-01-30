@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 
 namespace vampi
 {
@@ -7,6 +8,7 @@ namespace vampi
         protected int typ;
         protected int maxAge = 80;
         protected int age = -1;
+
         public int Age {
             get { return this.age; }
         }
@@ -33,5 +35,4 @@ namespace vampi
             this.sfeld.Sfigur = null;
         }
     }
-
 }

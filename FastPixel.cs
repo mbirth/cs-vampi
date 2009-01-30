@@ -38,6 +38,7 @@ class FastPixel {
         this._width = bitmap.Width;
         this._height = bitmap.Height;
         this.bytesPerPixel = (this._isAlpha)?4:3;
+        this.rgbValues = new byte[(this.Width * this.Height) * this.bytesPerPixel];
     }
 
     public void Lock() {
@@ -46,7 +47,6 @@ class FastPixel {
 
         Rectangle rect = new Rectangle(0, 0, this.Width, this.Height);
         this.bmpData = this.Bitmap.LockBits(rect, ImageLockMode.ReadWrite, this.Bitmap.PixelFormat);
-        this.rgbValues = new byte[(this.Width * this.Height) * this.bytesPerPixel];
         
         unsafe {
             byte* ptr= (byte*)this.bmpData.Scan0;

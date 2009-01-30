@@ -11,18 +11,19 @@ namespace vampi {
     public class Output_GUI : Output {
         const int statsHeight = 45;
         int scale = 1;
-        Form f = new Form();
+        Form f;
         FastPixel fp;
         Graphics fg;
         Bitmap field;
         Bitmap stats;
         
         public Output_GUI() {
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+            this.f = new Form();
             this.field = new Bitmap(Settings.size, Settings.size, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
             this.stats = new Bitmap(f.ClientSize.Width, Output_GUI.statsHeight, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
 
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
             f.Text = "Vampi GUI --- ©2008 Markus Birth, FA76";
             
             // attach some events
@@ -80,7 +81,7 @@ namespace vampi {
             int mapSteps = gradientMap.GetLength(0)-1;
             double percSteps = 100/(double)mapSteps;
             int bestMatch = (int)(percent/percSteps);
-            if (percent/percSteps == Math.Floor(percent/percSteps)) return gradientMap[bestMatch];
+            if (percent/percSteps == Math.Floor(percent/percSteps)) return gradientMap[bestMatch];  // shortcut
             int curStep = (int)Math.Floor(percent/percSteps);
             if (curStep == gradientMap.GetLength(0)-1) curStep--;
             Color left = gradientMap[curStep];
