@@ -3,7 +3,6 @@ using System.Drawing;
 using System.Drawing.Imaging;
 
 class FastPixel {
-    private byte[] rgbValues;
     private BitmapData bmpData;
     private bool locked = false;
 
@@ -38,7 +37,6 @@ class FastPixel {
         this._width = bitmap.Width;
         this._height = bitmap.Height;
         this.bytesPerPixel = (this._isAlpha)?4:3;
-        this.rgbValues = new byte[(this.Width * this.Height) * this.bytesPerPixel];
     }
 
     public void Lock() {
@@ -47,20 +45,6 @@ class FastPixel {
 
         Rectangle rect = new Rectangle(0, 0, this.Width, this.Height);
         this.bmpData = this.Bitmap.LockBits(rect, ImageLockMode.ReadWrite, this.Bitmap.PixelFormat);
-        
-        unsafe {
-            byte* ptr= (byte*)this.bmpData.Scan0;
-            int offset = this.bmpData.Stride - this.bmpData.Width * this.bytesPerPixel;
-            for(int y = 0; y < this.Height; y++, ptr += offset) {
-                for(int x = 0; x < this.Width; x++, ptr += this.bytesPerPixel) {
-                    int index = ((y * this.Width + x) * this.bytesPerPixel);
-                    this.rgbValues[index] = ptr[0];
-                    this.rgbValues[index+1] = ptr[1];
-                    this.rgbValues[index+2] = ptr[2];
-                    if (this.bytesPerPixel == 4) this.rgbValues[index+3] = ptr[3];
-                }
-            }
-        }
         this.locked = true;
     }
 
@@ -68,37 +52,24 @@ class FastPixel {
         if (!this.locked)
             throw new Exception("Bitmap not locked.");
 
-        // Copy the RGB values back to the bitmap;
-        if (setPixels) {
-            unsafe {
-                byte* ptr= (byte*)this.bmpData.Scan0;
-                int offset = this.bmpData.Stride - this.bmpData.Width * this.bytesPerPixel;
-                for(int y = 0; y < this.Height; y++, ptr += offset) {
-                    for(int x = 0; x < this.Width; x++, ptr += this.bytesPerPixel) {
-                        int index = ((y * this.Width + x) * this.bytesPerPixel);
-                        ptr[0] = this.rgbValues[index];
-                        ptr[1] = this.rgbValues[index+1];
-                        ptr[2] = this.rgbValues[index+2];
-                        if (this.bytesPerPixel == 4) ptr[3] = this.rgbValues[index+3];
-                    }
-                }
-            }
-        }
-
         // Unlock the bits.;
         this.Bitmap.UnlockBits(bmpData);
         this.locked = false;
     }
 
-    public void Clear(Color colour) {
+    public unsafe void Clear(Color color) {
         if (!this.locked)
             throw new Exception("Bitmap not locked.");
 
-        for (int index = 0; index < this.rgbValues.Length; index += this.bytesPerPixel) {
-            this.rgbValues[index] = colour.B;
-            this.rgbValues[index + 1] = colour.G;
-            this.rgbValues[index + 2] = colour.R;
-            if (this.bytesPerPixel == 4) this.rgbValues[index + 3] = colour.A;
+        byte* ptr = (byte*)this.bmpData.Scan0;
+        int offset = this.bmpData.Stride - this.bmpData.Width * this.bytesPerPixel;
+        for(int y = 0; y < this.Height; y++, ptr += offset) {
+            for(int x = 0; x < this.Width; x++, ptr += this.bytesPerPixel) {
+                ptr[0] = color.B;
+                ptr[1] = color.G;
+                ptr[2] = color.R;
+                if (this.bytesPerPixel == 4) ptr[3] = color.A;
+            }
         }
     }
 
@@ -106,33 +77,43 @@ class FastPixel {
         this.SetPixel(location.X, location.Y, colour);
     }
 
-    public void SetPixel(int x, int y, Color colour) {
+    public unsafe void SetPixel(int x, int y, Color color) {
         if (!this.locked)
             throw new Exception("Bitmap not locked.");
 
-        int index = ((y * this.Width + x) * this.bytesPerPixel);
-        this.rgbValues[index] = colour.B;
-        this.rgbValues[index + 1] = colour.G;
-        this.rgbValues[index + 2] = colour.R;
-        if (this.bytesPerPixel == 4) this.rgbValues[index + 3] = colour.A;
+        byte* ptr = (byte*)this.bmpData.Scan0;
+        ptr += getMemoryOffset(x, y);        
+
+        ptr[0] = color.B;
+        ptr[1] = color.G;
+        ptr[2] = color.R;
+        if (this.bytesPerPixel == 4) ptr[3] = color.A;
     }
 
     public Color GetPixel(Point location) {
         return this.GetPixel(location.X, location.Y);
     }
 
-    public Color GetPixel(int x, int y) {
+    public unsafe Color GetPixel(int x, int y) {
         if (!this.locked)
             throw new Exception("Bitmap not locked.");
 
-        int index = ((y * this.Width + x) * this.bytesPerPixel);
-        int b = this.rgbValues[index];
-        int g = this.rgbValues[index + 1];
-        int r = this.rgbValues[index + 2];
+        byte* ptr = (byte*)this.bmpData.Scan0;
+        ptr += getMemoryOffset(x, y);        
+
+        int b = ptr[0];
+        int g = ptr[1];
+        int r = ptr[2];
         if (this.bytesPerPixel == 4) {
-            int a = this.rgbValues[index + 3];
+            int a = ptr[3];
             return Color.FromArgb(a, r, g, b);
         }
         return Color.FromArgb(r, g, b);
+    }
+    
+    protected int getMemoryOffset(int x, int y) {
+        // int offset = this.bmpData.Stride - this.bmpData.Width * this.bytesPerPixel;
+        int result = y*this.bmpData.Stride + x*this.bytesPerPixel;
+        return result;
     }
 }
