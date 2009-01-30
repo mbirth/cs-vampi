@@ -5,13 +5,13 @@ using System.Drawing.Imaging;
 class FastPixel {
     private byte[] rgbValues;
     private BitmapData bmpData;
-    private IntPtr bmpPtr;
     private bool locked = false;
 
     private bool _isAlpha = false;
     private Bitmap _bitmap;
     private int _width;
     private int _height;
+    private int bytesPerPixel;
 
     public int Width {
         get { return this._width; }
@@ -37,6 +37,7 @@ class FastPixel {
         this._isAlpha = (this.Bitmap.PixelFormat == (this.Bitmap.PixelFormat | PixelFormat.Alpha));
         this._width = bitmap.Width;
         this._height = bitmap.Height;
+        this.bytesPerPixel = (this._isAlpha)?4:3;
     }
 
     public void Lock() {
@@ -45,16 +46,21 @@ class FastPixel {
 
         Rectangle rect = new Rectangle(0, 0, this.Width, this.Height);
         this.bmpData = this.Bitmap.LockBits(rect, ImageLockMode.ReadWrite, this.Bitmap.PixelFormat);
-        this.bmpPtr = this.bmpData.Scan0;
-
-        int bytes;
-        if (this.IsAlphaBitmap) {
-            bytes = (this.Width * this.Height) * 4;
-        } else {
-            bytes = (this.Width * this.Height) * 3;
+        this.rgbValues = new byte[(this.Width * this.Height) * this.bytesPerPixel];
+        
+        unsafe {
+            byte* ptr= (byte*)this.bmpData.Scan0;
+            int offset = this.bmpData.Stride - this.bmpData.Width * this.bytesPerPixel;
+            for(int y = 0; y < this.Height; y++, ptr += offset) {
+                for(int x = 0; x < this.Width; x++, ptr += this.bytesPerPixel) {
+                    int index = ((y * this.Width + x) * this.bytesPerPixel);
+                    this.rgbValues[index] = ptr[0];
+                    this.rgbValues[index+1] = ptr[1];
+                    this.rgbValues[index+2] = ptr[2];
+                    if (this.bytesPerPixel == 4) this.rgbValues[index+3] = ptr[3];
+                }
+            }
         }
-        this.rgbValues = new byte[bytes];
-        System.Runtime.InteropServices.Marshal.Copy(this.bmpPtr, rgbValues, 0, this.rgbValues.Length);
         this.locked = true;
     }
 
@@ -63,8 +69,21 @@ class FastPixel {
             throw new Exception("Bitmap not locked.");
 
         // Copy the RGB values back to the bitmap;
-        if (setPixels)
-            System.Runtime.InteropServices.Marshal.Copy(this.rgbValues, 0, this.bmpPtr, this.rgbValues.Length);
+        if (setPixels) {
+            unsafe {
+                byte* ptr= (byte*)this.bmpData.Scan0;
+                int offset = this.bmpData.Stride - this.bmpData.Width * this.bytesPerPixel;
+                for(int y = 0; y < this.Height; y++, ptr += offset) {
+                    for(int x = 0; x < this.Width; x++, ptr += this.bytesPerPixel) {
+                        int index = ((y * this.Width + x) * this.bytesPerPixel);
+                        ptr[0] = this.rgbValues[index];
+                        ptr[1] = this.rgbValues[index+1];
+                        ptr[2] = this.rgbValues[index+2];
+                        if (this.bytesPerPixel == 4) ptr[3] = this.rgbValues[index+3];
+                    }
+                }
+            }
+        }
 
         // Unlock the bits.;
         this.Bitmap.UnlockBits(bmpData);
@@ -75,19 +94,11 @@ class FastPixel {
         if (!this.locked)
             throw new Exception("Bitmap not locked.");
 
-        if (this.IsAlphaBitmap) {
-            for (int index = 0; index < this.rgbValues.Length; index += 4) {
-                this.rgbValues[index] = colour.B;
-                this.rgbValues[index + 1] = colour.G;
-                this.rgbValues[index + 2] = colour.R;
-                this.rgbValues[index + 3] = colour.A;
-            }
-        } else {
-            for (int index = 0; index < this.rgbValues.Length; index += 3) {
-                this.rgbValues[index] = colour.B;
-                this.rgbValues[index + 1] = colour.G;
-                this.rgbValues[index + 2] = colour.R;
-            }
+        for (int index = 0; index < this.rgbValues.Length; index += this.bytesPerPixel) {
+            this.rgbValues[index] = colour.B;
+            this.rgbValues[index + 1] = colour.G;
+            this.rgbValues[index + 2] = colour.R;
+            if (this.bytesPerPixel == 4) this.rgbValues[index + 3] = colour.A;
         }
     }
 
@@ -99,18 +110,11 @@ class FastPixel {
         if (!this.locked)
             throw new Exception("Bitmap not locked.");
 
-        if (this.IsAlphaBitmap) {
-            int index = ((y * this.Width + x) * 4);
-            this.rgbValues[index] = colour.B;
-            this.rgbValues[index + 1] = colour.G;
-            this.rgbValues[index + 2] = colour.R;
-            this.rgbValues[index + 3] = colour.A;
-        } else {
-            int index = ((y * this.Width + x) * 3);
-            this.rgbValues[index] = colour.B;
-            this.rgbValues[index + 1] = colour.G;
-            this.rgbValues[index + 2] = colour.R;
-        }
+        int index = ((y * this.Width + x) * this.bytesPerPixel);
+        this.rgbValues[index] = colour.B;
+        this.rgbValues[index + 1] = colour.G;
+        this.rgbValues[index + 2] = colour.R;
+        if (this.bytesPerPixel == 4) this.rgbValues[index + 3] = colour.A;
     }
 
     public Color GetPixel(Point location) {
@@ -121,19 +125,14 @@ class FastPixel {
         if (!this.locked)
             throw new Exception("Bitmap not locked.");
 
-        if (this.IsAlphaBitmap) {
-            int index = ((y * this.Width + x) * 4);
-            int b = this.rgbValues[index];
-            int g = this.rgbValues[index + 1];
-            int r = this.rgbValues[index + 2];
+        int index = ((y * this.Width + x) * this.bytesPerPixel);
+        int b = this.rgbValues[index];
+        int g = this.rgbValues[index + 1];
+        int r = this.rgbValues[index + 2];
+        if (this.bytesPerPixel == 4) {
             int a = this.rgbValues[index + 3];
             return Color.FromArgb(a, r, g, b);
-        } else {
-            int index = ((y * this.Width + x) * 3);
-            int b = this.rgbValues[index];
-            int g = this.rgbValues[index + 1];
-            int r = this.rgbValues[index + 2];
-            return Color.FromArgb(r, g, b);
         }
+        return Color.FromArgb(r, g, b);
     }
 }

@@ -10,7 +10,7 @@ namespace vampi {
     
     public class Output_GUI : Output {
         const int statsHeight = 45;
-        double scale = 1;
+        int scale = 1;
         Form f = new Form();
         FastPixel fp;
         Graphics fg;
@@ -18,11 +18,8 @@ namespace vampi {
         Bitmap stats;
         
         public Output_GUI() {
-            field = new Bitmap(Settings.size, Settings.size, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
-            stats = new Bitmap(300, Output_GUI.statsHeight, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
-            fp = new FastPixel(field);
-            fg = Graphics.FromHwnd(f.Handle);
-            fg.InterpolationMode = InterpolationMode.NearestNeighbor;
+            this.field = new Bitmap(Settings.size, Settings.size, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
+            this.stats = new Bitmap(f.ClientSize.Width, Output_GUI.statsHeight, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
@@ -37,10 +34,17 @@ namespace vampi {
             Graphics g = Graphics.FromImage(this.field);
             g.Clear(Settings.guiColorEmpty);
             g.Dispose();
+            
+            if (Math.Min(f.ClientSize.Width, f.ClientSize.Height-Output_GUI.statsHeight) < Settings.size) {
+                f.ClientSize = new Size(Settings.size, Settings.size+Output_GUI.statsHeight);
+            }
 
+            fp = new FastPixel(field);
+            fg = Graphics.FromHwnd(f.Handle);
+            fg.InterpolationMode = InterpolationMode.NearestNeighbor;
             fg.Clear(Color.White);   // clear window background
-            calculateScale();
             f.Show();
+            calculateScale();
         }
         
         ~Output_GUI() {
@@ -54,11 +58,13 @@ namespace vampi {
         }
         
         public void calculateScale() {
-            scale = (double)(Math.Min(f.ClientSize.Height - Output_GUI.statsHeight, f.ClientSize.Width) / Settings.size);
+            scale = (int)Math.Floor((double)Math.Min(f.ClientSize.Height - Output_GUI.statsHeight, f.ClientSize.Width) / (double)Settings.size);
+            if (scale<1) scale = 1;
         }
         
         public void FormResize(object sender, EventArgs e) {
             calculateScale();
+            stats = new Bitmap(f.ClientSize.Width, Output_GUI.statsHeight, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
             fg = Graphics.FromHwnd(f.Handle);
             fg.InterpolationMode = InterpolationMode.NearestNeighbor;
             fg.Clear(Color.White);
@@ -66,7 +72,7 @@ namespace vampi {
         
         public override void doOutput() {
             this.drawGameMap();
-            if (Program.AnzSimDone % 2 == 0) this.drawStatistics();
+            this.drawStatistics();
             Application.DoEvents();
         }
         
@@ -123,19 +129,22 @@ namespace vampi {
                 }
             }
             fp.Unlock(true);
-            fg.DrawImage(this.field, 0, Output_GUI.statsHeight, (int)(Settings.size * this.scale), (int)(Settings.size * this.scale));
+            fg.DrawImage(this.field, 0, Output_GUI.statsHeight, Settings.size * this.scale, Settings.size * this.scale);
             f.Update();
         }
         
         public void drawStatistics() {
             if (!f.Visible) this.requestAbort = true;
             Graphics g = Graphics.FromImage(this.stats);
+            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.SingleBitPerPixelGridFit;
             g.Clear(Color.White);
             int lineSpc = 10;
             
             int Ecount = Einwohner.Count; // sflaeche.countTypeOccurrences(Typliste.EINWOHNER);
             int Vcount = Vampir.Count;    // sflaeche.countTypeOccurrences(Typliste.VAMPIR);
-            g.DrawString(String.Format("Steps Done: {0:D5}", Program.AnzSimDone), Settings.guiFont, Settings.guiFontBrush, 5, 0);
+            g.DrawString(String.Format("Step: {0:D5}", Program.AnzSimDone), Settings.guiFont, Settings.guiFontBrush, 5, 0);
+            g.DrawString(String.Format("T{0:N} = {1:D}/sec", Program.lastCalcTime+Program.lastStatsTime, (int)Math.Floor(1000/(Program.lastCalcTime+Program.lastStatsTime))), Settings.guiFont, Settings.guiFontBrush, 100, 0);
+            g.DrawString(String.Format("C{0:N} D{1:N}", Program.lastCalcTime, Program.lastStatsTime), Settings.guiFont, Settings.guiFontBrush, 200, 0);
             g.DrawString(String.Format(String.Format("Einwohner: {0:D} / Vampire: {1:D}", Ecount, Vcount), Program.AnzSimDone), Settings.guiFont, Settings.guiFontBrush, 5, 1*lineSpc);
             g.DrawString(String.Format(String.Format("Verhältnis Vampire/Einwohner = 1/{0:N5}", (double)Ecount / Vcount), Program.AnzSimDone), Settings.guiFont, Settings.guiFontBrush, 5, 2*lineSpc);
             g.DrawString(String.Format(String.Format("Bedeckung: {0:N5} %", (double)(Ecount + Vcount) / (Settings.size*Settings.size) * 100), Program.AnzSimDone), Settings.guiFont, Settings.guiFontBrush, 5, 3*lineSpc);

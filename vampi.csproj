@@ -24,7 +24,7 @@
     <OutputType>Exe</OutputType>
     <AssemblyName>vampi</AssemblyName>
     <RootNamespace>vampi</RootNamespace>
-    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
     <ApplicationIcon>.</ApplicationIcon>
   </PropertyGroup>
@@ -39,7 +39,7 @@
     <AssemblyName>vampi</AssemblyName>
     <DebugSymbols>true</DebugSymbols>
     <RootNamespace>vampi</RootNamespace>
-    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
     <ApplicationIcon>.</ApplicationIcon>
   </PropertyGroup>
