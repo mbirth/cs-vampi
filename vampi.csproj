@@ -68,7 +68,6 @@
     <Compile Include="Spielfeld.cs" />
     <Compile Include="Spielfigur.cs" />
     <Compile Include="Spielflaeche.cs" />
-    <Compile Include="Typliste.cs" />
     <Compile Include="Vampir.cs" />
     <Compile Include="Output.cs" />
     <Compile Include="Output_CLI.cs" />

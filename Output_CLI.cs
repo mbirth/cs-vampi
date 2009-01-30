@@ -81,13 +81,13 @@ namespace vampi {
                         Console.BackgroundColor = Settings.colorEmpty;
                     else { //Spielfeld besetzt
                         switch (sf.Typ) {
-                            case Typliste.EINWOHNER:
+                            case Spielfigur.TYPE_HUMAN:
                                 if (((Einwohner)sf).Infected)
                                     Console.BackgroundColor = Settings.colorHumanInfected;
                                 else
                                     Console.BackgroundColor = Settings.colorHuman;
                                 break;
-                            case Typliste.VAMPIR:
+                            case Spielfigur.TYPE_VAMPIRE:
                                 Console.BackgroundColor = Settings.colorVampire;
                                 break;
                         }//switch

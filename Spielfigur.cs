@@ -4,17 +4,22 @@ using System.Collections;
 namespace vampi
 {
     public abstract class Spielfigur {
+        public const int F_TYPE = 0;
+        public const int TYPE_HUMAN = 1;
+        public const int TYPE_VAMPIRE = 2;
+        
+        public const int F_AGE = 1;
+        public const int F_MAXAGE = 2;
+        public int[] props = new int[20];
+
         protected Spielfeld sfeld;
-        protected int typ;
-        protected int maxAge = 80;
-        protected int age = -1;
 
         public int Age {
-            get { return this.age; }
+            get { return this.props[F_AGE]; }
         }
 
         public int Typ {
-            get { return this.typ; }
+            get { return this.props[F_TYPE]; }
         }
 
         public Spielfigur(Spielfeld sfeld) {
@@ -23,11 +28,9 @@ namespace vampi
         }
 
         public virtual void runStep() {
-            if (this.age != -1) {
-                this.age++;
-                if (this.age >= this.maxAge) {
-                    this.die();
-                }
+            this.props[F_AGE]++;
+            if (this.props[F_AGE] >= this.props[F_MAXAGE]) {
+                this.die();
             }
         }
 

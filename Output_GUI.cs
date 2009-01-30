@@ -115,13 +115,16 @@ namespace vampi {
                     if (sf == null) c = Settings.guiColorEmpty;   //Spielfeld leer
                     else { //Spielfeld besetzt
                         switch (sf.Typ) {
-                            case Typliste.EINWOHNER:
+                            case Spielfigur.TYPE_HUMAN:
                                 if (((Einwohner)sf).Infected)
                                     c = getGradient(Settings.guiColorHumanInfected, 100-(double)(sf.Age-Settings.humanMaxAge+Settings.humanInfectedMaxAge)*100/(double)Settings.humanInfectedMaxAge);
                                 else
-                                    c = getGradient(Settings.guiColorHuman, 100-(double)sf.Age*100/(double)Settings.humanMaxAge);
+                                    if (sf.props[Einwohner.F_SEX] == Einwohner.SEX_MALE)
+                                        c = getGradient(Settings.guiColorHumanMale, 100-(double)sf.Age*100/(double)Settings.humanMaxAge);
+                                    else
+                                        c = getGradient(Settings.guiColorHumanFemale, 100-(double)sf.Age*100/(double)Settings.humanMaxAge);
                                 break;
-                            case Typliste.VAMPIR:
+                            case Spielfigur.TYPE_VAMPIRE:
                                 c = getGradient(Settings.guiColorVampire, 100-(double)sf.Age*100/(double)Settings.vampireMaxAge);
                                 break;
                         }
@@ -144,11 +147,11 @@ namespace vampi {
             int Ecount = Einwohner.Count; // sflaeche.countTypeOccurrences(Typliste.EINWOHNER);
             int Vcount = Vampir.Count;    // sflaeche.countTypeOccurrences(Typliste.VAMPIR);
             g.DrawString(String.Format("Step: {0:D5}", Program.AnzSimDone), Settings.guiFont, Settings.guiFontBrush, 5, 0);
-            g.DrawString(String.Format("T{0:N} = {1:D}/sec", Program.lastCalcTime+Program.lastStatsTime, (int)Math.Floor(1000/(Program.lastCalcTime+Program.lastStatsTime))), Settings.guiFont, Settings.guiFontBrush, 100, 0);
+            g.DrawString(String.Format("T{0:N} = {1:D}/sec", Program.lastOverallTime, (int)Math.Floor(1000/(Program.lastOverallTime))), Settings.guiFont, Settings.guiFontBrush, 100, 0);
             g.DrawString(String.Format("C{0:N} D{1:N}", Program.lastCalcTime, Program.lastStatsTime), Settings.guiFont, Settings.guiFontBrush, 200, 0);
-            g.DrawString(String.Format(String.Format("Einwohner: {0:D} / Vampire: {1:D}", Ecount, Vcount), Program.AnzSimDone), Settings.guiFont, Settings.guiFontBrush, 5, 1*lineSpc);
-            g.DrawString(String.Format(String.Format("Verhältnis Vampire/Einwohner = 1/{0:N5}", (double)Ecount / Vcount), Program.AnzSimDone), Settings.guiFont, Settings.guiFontBrush, 5, 2*lineSpc);
-            g.DrawString(String.Format(String.Format("Bedeckung: {0:N5} %", (double)(Ecount + Vcount) / (Settings.size*Settings.size) * 100), Program.AnzSimDone), Settings.guiFont, Settings.guiFontBrush, 5, 3*lineSpc);
+            g.DrawString(String.Format(String.Format("Humans: {0:D} / Vampires: {1:D}", Ecount, Vcount), Program.AnzSimDone), Settings.guiFont, Settings.guiFontBrush, 5, 1*lineSpc);
+            g.DrawString(String.Format(String.Format("V/H Ratio = 1/{0:N5}", (double)Ecount / Vcount), Program.AnzSimDone), Settings.guiFont, Settings.guiFontBrush, 5, 2*lineSpc);
+            g.DrawString(String.Format(String.Format("Coverage: {0:N5} %", (double)(Ecount + Vcount) / (Settings.size*Settings.size) * 100), Program.AnzSimDone), Settings.guiFont, Settings.guiFontBrush, 5, 3*lineSpc);
             g.Dispose();
             g = Graphics.FromHwnd(f.Handle);
             g.DrawImageUnscaled(this.stats, 0, 0);
